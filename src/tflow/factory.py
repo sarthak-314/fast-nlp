@@ -213,11 +213,11 @@ def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch):
 
 
 def lr_scheduler_factory(warmup_epochs, warmup_power, lr_cosine, train_steps): 
-    non_warmup_steps = int(train_steps * (1-warmup_epochs))
     warmup_steps = int(train_steps * warmup_epochs)
-    first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
-    if warmup_epochs >= 1: 
-        first_decay_steps = train_steps 
+    first_decay_steps = (lr_cosine.decay_epochs * train_steps)
+    # first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
+    # if warmup_epochs >= 1: 
+    #     first_decay_steps = train_steps 
 
     min_lr_ratio = lr_cosine.min_lr / lr_cosine.max_lr
     lr_scheduler = CosineDecayRestarts(
@@ -237,38 +237,6 @@ def lr_scheduler_factory(warmup_epochs, warmup_power, lr_cosine, train_steps):
     )
     return lr_scheduler
 
-
-def lr_scheduler_factory_v1(kwargs):
-    non_warmup_steps = kwargs.train_steps * (1-kwargs.warmup.ratio)
-    warmup_steps = kwargs.warmup.ratio * kwargs.train_steps
-    if kwargs._target_ == 'constant':
-        print('Using constant lr')
-        lr_scheduler = lambda step: kwargs.lr
-    elif kwargs._target_ == 'ExponentialCyclicalLearningRate':
-        print('Using exponential cyclic LR')
-        step_size = int(kwargs.train_steps/(2*kwargs.num_cycles))
-        lr_scheduler = tfa.optimizers.ExponentialCyclicalLearningRate(
-            initial_learning_rate=kwargs.min_lr,
-            maximal_learning_rate=kwargs.max_lr,
-            gamma=kwargs.gamma,
-            step_size=step_size,
-            scale_mode='cycle',
-        )
-    elif kwargs._target_ == 'CosineDecayRestarts':
-        first_decay_steps = non_warmup_steps//sum(kwargs.step_gamma**i for i in range(1, kwargs.num_cycles))
-        lr_scheduler = CosineDecayRestarts(kwargs.lr, first_decay_steps, kwargs.step_gamma, kwargs.lr_gamma, kwargs.min_lr_ratio)
-
-    # Add Warmup to LR Scheduler
-    if 'warmup' in kwargs:
-        print('Adding warmup to lr scheduler')
-        lr_scheduler = WarmUp(
-            warmup_lr=kwargs.warmup.lr,
-            lr_scheduler=lr_scheduler,
-            warmup_steps=warmup_steps,
-            power=kwargs.warmup.power,
-        )
-
-    return lr_scheduler
 
 
 
