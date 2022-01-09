@@ -213,8 +213,8 @@ def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch):
 
 
 def lr_scheduler_factory(warmup_epochs, warmup_power, lr_cosine, train_steps): 
-    warmup_steps = int(train_steps * warmup_epochs)
-    first_decay_steps = (lr_cosine.decay_epochs * train_steps)
+    warmup_steps = int(train_steps * warmup_epochs)-1
+    first_decay_steps = (lr_cosine.decay_epochs * train_steps)+1
     # first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
     # if warmup_epochs >= 1: 
     #     first_decay_steps = train_steps 
