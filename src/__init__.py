@@ -104,7 +104,7 @@ def set_seed(seed=42):
 
 
 # Startup Notebook Functions
-REPO_NAME = 'toxic'
+REPO_NAME = 'fast-nlp'
 REPO_PATH = f'https://github.com/sarthak-314/{REPO_NAME}'
 def sync():
     'Sync Notebook with VS Code'
