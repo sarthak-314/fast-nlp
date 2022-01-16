@@ -55,20 +55,8 @@ from .core import (
     red, blue, green, yellow,
 )
 
-# Install omegaconf if not already available
-try:
-    from omegaconf import OmegaConf
-except:
-    print('Installing omeaconf')
-    os.system('pip install -q omegaconf')
-    from omegaconf import OmegaConf
-
-# Competition Specific Transformers Setup
-print('Installing transformers and datasets')
-os.system('pip install -q --upgrade git+https://github.com/huggingface/transformers')
-os.system('pip install -q --upgrade git+https://github.com/huggingface/datasets')
-
-import transformers, datasets
+import transformers
+import datasets
 from transformers import TFAutoModel, TFAutoModelForQuestionAnswering, AutoTokenizer
 from datasets import concatenate_datasets, load_dataset
 
