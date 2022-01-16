@@ -57,7 +57,9 @@ from .core import (
 
 import transformers
 import datasets
-from transformers import TFAutoModel, TFAutoModelForQuestionAnswering, AutoTokenizer
+from transformers import (
+    TFAutoModel, TFAutoModelForQuestionAnswering, AutoTokenizer, AutoConfig, AutoModel
+)
 from datasets import concatenate_datasets, load_dataset
 
 
@@ -110,6 +112,18 @@ if ENV == 'Colab':
     _colab_mount_drive()
 
 # Hyperparameters Magic Command
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
+def read_yaml(filename):
+    with open(filename, 'r') as stream:
+        try:
+            return AttrDict(yaml.safe_load(stream))
+        except yaml.YAMLError as exc:
+            print(exc)
+
 @register_line_cell_magic
 def hyperparameters(_, cell):
     'Magic command to write hyperparameters into a yaml file and load it with omegaconf'
@@ -118,7 +132,7 @@ def hyperparameters(_, cell):
         f.write(cell)
 
     # Load the YAML file into the variable HP
-    HP = OmegaConf.load('experiment.yaml')
+    HP = read_yaml('experiment.yaml')
     get_ipython().user_ns['HP'] = HP
 
 def load_weights_from_wandb(model, weights):
@@ -132,10 +146,10 @@ def load_weights_from_wandb(model, weights):
     model.load_weights(weights_file)
 
 # Competition Specific Constants & Functions
-COMP_NAME = 'jigsaw-toxic-severity-rating'
-DRIVE_DIR = Path('/content/drive/MyDrive/Chai')
-DF_DIR = {
-    'Kaggle': KAGGLE_INPUT_DIR/'toxic-dataframes',
-    'Colab': DRIVE_DIR/'Dataframes',
-    'Surface Pro': WORKING_DIR/'data',
-}[ENV]
+# COMP_NAME = 'jigsaw-toxic-severity-rating'
+# DRIVE_DIR = Path('/content/drive/MyDrive/Chai')
+# DF_DIR = {
+#     'Kaggle': KAGGLE_INPUT_DIR/'toxic-dataframes',
+#     'Colab': DRIVE_DIR/'Dataframes',
+#     'Surface Pro': WORKING_DIR/'data',
+# }[ENV]
