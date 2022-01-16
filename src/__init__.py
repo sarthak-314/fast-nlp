@@ -62,6 +62,12 @@ from transformers import (
 )
 from datasets import concatenate_datasets, load_dataset
 
+try:
+    from omegaconf import OmegaConf
+except:
+    print('Installing omeaconf')
+    os.system('pip install -q omegaconf')
+    from omegaconf import OmegaConf
 
 # Setup Jupyter Notebook
 def _setup_jupyter_notebook():
@@ -132,7 +138,7 @@ def hyperparameters(_, cell):
         f.write(cell)
 
     # Load the YAML file into the variable HP
-    HP = read_yaml('experiment.yaml')
+    HP = OmegaConf.load('experiment.yaml')
     get_ipython().user_ns['HP'] = HP
 
 def load_weights_from_wandb(model, weights):
