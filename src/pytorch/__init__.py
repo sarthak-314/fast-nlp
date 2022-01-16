@@ -1,7 +1,10 @@
 from torch.utils.data import Dataset, DataLoader
 from torch import nn
 
-import accelerator
+try:
+    import accelerate
+except:
+    print('Cannot import accelerate')
 
 
 def get_optimizer_grouped_params(model, weight_decay):
