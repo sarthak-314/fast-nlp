@@ -13,8 +13,8 @@ def optimizer_factory(kwargs, lr_scheduler):
     optimizer_name = kwargs._target_
     if optimizer_name == 'AdamW':
         optimizer =  tfa.optimizers.AdamW(
-            beta_1=kwargs.betas[0],
-            beta_2=kwargs.betas[1],
+            beta_1=kwargs.beta_1,
+            beta_2=kwargs.beta_2,
             epsilon=kwargs.epsilon,
             weight_decay=kwargs.weight_decay,
             clipnorm=kwargs.max_grad_norm,
