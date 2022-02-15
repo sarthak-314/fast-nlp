@@ -20,6 +20,7 @@ from ..core import HARDWARE, ENV
 from .factory import (
     lr_scheduler_factory, optimizer_factory, callbacks_factory, get_wandb_callback
 )
+from tensorflow.keras import backend as K
 
 
 def _enable_mixed_precision():
