@@ -20,7 +20,7 @@ from ..core import HARDWARE, ENV
 from .factory import (
     adamw_optimizer_factory, lr_scheduler_factory
 )
-from .utils import get_model_average
+from .utils import get_model_average, build_hidden_layer, load_model_weights
 from tensorflow.keras import backend as K
 
 
