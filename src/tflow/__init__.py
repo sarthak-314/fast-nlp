@@ -18,8 +18,9 @@ from ..core import HARDWARE, ENV
 
 # Module Imports for Notebook
 from .factory import (
-    lr_scheduler_factory, optimizer_factory, callbacks_factory, get_wandb_callback
+    adamw_optimizer_factory, lr_scheduler_factory
 )
+from .utils import get_model_average
 from tensorflow.keras import backend as K
 
 

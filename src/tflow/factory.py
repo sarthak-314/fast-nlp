@@ -7,112 +7,6 @@ import math
 
 from ..core import WORKING_DIR, red, green, blue
 
-
-
-def optimizer_factory(kwargs, lr_scheduler):
-    optimizer_name = kwargs._target_
-    if optimizer_name == 'AdamW':
-        optimizer =  tfa.optimizers.AdamW(
-            beta_1=kwargs.beta_1,
-            beta_2=kwargs.beta_2,
-            epsilon=kwargs.epsilon,
-            weight_decay=kwargs.weight_decay,
-            clipnorm=kwargs.max_grad_norm,
-            amsgrad=False, # Does not work on TPU
-            learning_rate=lr_scheduler,
-        )
-    if kwargs.use_swa:
-        print(red('Using SWA'))
-        optimizer = tfa.optimizers.SWA(optimizer)
-    if 'use_lookahead' in kwargs and kwargs.use_lookahead: 
-        print(red('Using Lookahead'))
-        optimizer = tfa.optimizers.Lookahead(optimizer)
-    if 'average_decay' in kwargs: 
-        print(blue('Using moving average'))
-        optimizer = tfa.optimizers.MovingAverage(
-            optimizer, 
-            average_decay=kwargs.average_decay, 
-            dynamic_decay=kwargs.dynamic_decay
-        )
-
-    return optimizer
-
-
-def callbacks_factory(kwargs):
-    monitor, mode = kwargs.monitor_mode
-    common_kwargs = {
-        'monitor': monitor,
-        'mode': mode,
-        'verbose': True,
-    }
-    callbacks = []
-    if 'checkpoint_file' in kwargs:
-        print(f'tf.keras.callbacks.ModelCheckpoint: Saving model checkpoints at {kwargs.checkpoint_file}')
-        model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=str(WORKING_DIR/kwargs.checkpoint_file),
-            save_weights_only=True,
-            save_best_only=True,
-            **common_kwargs,
-        )
-        callbacks.append(model_checkpoint_callback)
-    if 'early_stop' in kwargs:
-        print(f'tf.keras.callbacks.EarlyStopping: Will stop training if metric {kwargs.monitor_mode[0]} does not improve after {kwargs.early_stop} epochs')
-        early_stopping_callback = tf.keras.callbacks.EarlyStopping(
-            patience=kwargs.early_stop,
-            restore_best_weights=True,
-            **common_kwargs,
-        )
-        callbacks.append(early_stopping_callback)
-    if 'max_train_hours' in kwargs:
-        print(f'tfa.callbacks.TimeStopping: Will stop training after {kwargs.max_train_hours} hours')
-        time_stopping_callback = tfa.callbacks.TimeStopping(
-            seconds=int(kwargs.max_train_hours*3600), verbose=common_kwargs['verbose'],
-        )
-        callbacks.append(time_stopping_callback)
-    if 'reduce_lr' in kwargs:
-        print(f'tf.keras.callbacks.ReduceLROnPlateau: Warning: only works in float LR')
-        reduce_lr_callback =  tf.keras.callbacks.ReduceLROnPlateau(
-            factor=kwargs.reduce_lr['factor'],
-            patience=kwargs.reduce_lr['patience'],
-            min_delta=0,
-            min_lr=1e-8,
-            **common_kwargs,
-        )
-        callbacks.append(reduce_lr_callback)
-    if 'terminate_on_nan' in kwargs:
-        callbacks.append(tf.keras.callbacks.TerminateOnNaN())
-    if 'tqdm_bar' in kwargs:
-        callbacks.append(tfa.callbacks.TQDMProgressBar())
-
-    return callbacks
-
-def get_wandb_callback(callbacks_kwargs, train_ds, valid_ds, valid_steps):
-    try:
-        monitor, mode = callbacks_kwargs.monitor_mode
-        wandb_callback = wandb.keras.WandbCallback(
-            monitor=monitor, mode=mode,
-            save_model=True, save_graph=True,
-            save_weights_only=True,
-            log_weights=True,
-            log_gradients=True,
-            training_data=train_ds,
-            validation_data=valid_ds,
-            validation_steps=valid_steps,
-        )
-        return [wandb_callback]
-    except Exception as e:
-        try:
-            print('wandb exception:', e)
-            print('using lightweight version of wandb callback')
-            wandb_callback = wandb.keras.WandbCallback(
-                monitor=monitor, mode=mode,
-                save_model=False, save_graph=True,
-            )
-            return [wandb_callback]
-        except Exception as e:
-            print('wandb_callback: ', e)
-            return []
-
 class WarmUp(tf.keras.optimizers.schedules.LearningRateSchedule):
     'Applies warmup schedule on the given lr schedule function'
     def __init__(self, warmup_lr, lr_scheduler, warmup_steps, power=1.0):
@@ -212,32 +106,39 @@ def plot_first_epoch(lr_scheduler, train_steps, checkpoints_per_epoch):
     _ = plt.plot([lr_scheduler(x) for x in range(train_steps)], markevery=steps, marker='o')
 
 
-def lr_scheduler_factory(warmup_epochs, warmup_power, lr_cosine, train_steps): 
-    warmup_steps = int(train_steps * warmup_epochs)-1
-    first_decay_steps = int(lr_cosine.decay_epochs * train_steps)+1
-    # first_decay_steps = non_warmup_steps//sum(lr_cosine.step_gamma**i for i in range(1, lr_cosine.num_cycles))+1
-    # if warmup_epochs >= 1: 
-    #     first_decay_steps = train_steps 
-
-    min_lr_ratio = lr_cosine.min_lr / lr_cosine.max_lr
-    lr_scheduler = CosineDecayRestarts(
-        lr_cosine.max_lr,
-        first_decay_steps,
-        lr_cosine.step_gamma,
-        lr_cosine.lr_gamma,
-        min_lr_ratio,
+def adamw_optimizer_factory(HP, lr_scheduler): 
+    optimizer = tfa.optimizers.AdamW(
+        beta_1=HP.beta_1, 
+        beta_2=HP.beta_2, 
+        epsilon=HP.epsilon, 
+        weight_decay=HP.max_weight_decay, 
+        clipnorm=HP.max_grad_norm,
+        learning_rate=lr_scheduler,
     )
+    if HP.average_decay > 0: 
+        print(f'Using EMA with decay {blue(HP.average_decay)}')
+        optimizer = tfa.optimizers.MovingAverage(
+            optimizer, 
+            average_decay=HP.average_decay, 
+            dynamic_decay=True, 
+        )
+    return optimizer
 
-    # Add warmup to scheduler
+def lr_scheduler_factory(HP, train_steps):
+    lr_scheduler = CosineDecayRestarts(
+        HP.max_lr, 
+        int(HP.decay_epochs*train_steps)+1, 
+        HP.step_gamma, 
+        HP.lr_gamma, 
+        HP.min_lr/HP.max_lr, 
+    )
     lr_scheduler = WarmUp(
-        warmup_lr=lr_cosine.max_lr,
-        lr_scheduler=lr_scheduler,
-        warmup_steps=warmup_steps,
-        power=warmup_power,
+        warmup_lr=HP.max_lr, 
+        lr_scheduler=lr_scheduler, 
+        warmup_steps=int(train_steps*HP.warmup_epochs)-1, 
+        power=HP.warmup_power, 
     )
     return lr_scheduler
-
-
 
 
 
