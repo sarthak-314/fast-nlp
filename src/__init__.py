@@ -23,7 +23,7 @@ import sys
 import os
 import re
 
-
+tqdm.pandas()
 
 # Uncommonly Used Libraries
 from sklearn.utils.class_weight import compute_class_weight
