@@ -122,6 +122,8 @@ def adamw_optimizer_factory(HP, lr_scheduler):
             average_decay=HP.average_decay, 
             dynamic_decay=True, 
         )
+    else: 
+        print('Skipping EMA')
     return optimizer
 
 def lr_scheduler_factory(HP, train_steps):

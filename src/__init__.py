@@ -10,10 +10,10 @@ Startup script to run in the beggining of every Jupyter Notebook for the competi
 from collections import Counter, defaultdict
 from functools import partial
 from termcolor import colored
+from time import time, sleep
 from tqdm.auto import tqdm
 from datetime import date 
 from pathlib import Path
-from time import time
 import pandas as pd
 import numpy as np
 import random
