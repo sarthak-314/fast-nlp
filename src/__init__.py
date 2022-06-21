@@ -48,6 +48,8 @@ import gc
 import wandb
 
 import tensorflow as tf
+
+from torch import nn
 import torch
 
 from IPython.core.magic import register_line_cell_magic
@@ -75,6 +77,9 @@ except:
     print('Installing omeaconf')
     os.system('pip install -q omegaconf')
     from omegaconf import OmegaConf
+
+if HARDWARE == 'GPU':
+    import cudf
 
 # Setup Jupyter Notebook
 def _setup_jupyter_notebook():
