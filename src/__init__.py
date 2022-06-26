@@ -79,7 +79,10 @@ except:
     from omegaconf import OmegaConf
 
 if HARDWARE == 'GPU':
-    import cudf
+    try:
+        import cudf
+    except: 
+        print('Skipping cudf import')
 
 # Setup Jupyter Notebook
 def _setup_jupyter_notebook():
