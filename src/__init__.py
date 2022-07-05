@@ -166,12 +166,3 @@ def load_weights_from_wandb(model, weights):
     print('Restoring weights from run', run_name)
     wandb.restore(weights_file, run_name)
     model.load_weights(weights_file)
-
-# Competition Specific Constants & Functions
-# COMP_NAME = 'jigsaw-toxic-severity-rating'
-# DRIVE_DIR = Path('/content/drive/MyDrive/Chai')
-# DF_DIR = {
-#     'Kaggle': KAGGLE_INPUT_DIR/'toxic-dataframes',
-#     'Colab': DRIVE_DIR/'Dataframes',
-#     'Surface Pro': WORKING_DIR/'data',
-# }[ENV]
